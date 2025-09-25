@@ -13,48 +13,61 @@ Own Your Code: The CLI copies the component code into your project, giving you f
 
 Intuitive CLI: A simple command-line interface makes it easy to add new components and get started in seconds.
 
-Quick Start
-1. Project Setup
+
+## Quick Start
+
+### 1. Project Setup
 Create a new folder and set up a basic Python environment.
 
-Bash
-
+```bash
 mkdir shadcn-agent
 cd shadcn-agent
-pip install langgraph
-2. Install the CLI
-Copy the cli.py and templates/ folders directly into your project.
+pip install langgraph streamlit deep-translator beautifulsoup4 requests python-dotenv
+```
 
-3. Add Components
-Use the CLI to add the core nodes and a sample workflow.
+### 2. Install the CLI
+Copy the `cli.py` and `templates/` folders directly into your project.
 
-Bash
+### 3. Add Components
+Use the CLI to add nodes and workflows:
 
+```bash
 python cli.py add node summarizer_node
+python cli.py add node search_node
+python cli.py add node translate_node
+python cli.py add node email_node
 python cli.py add workflow summarize_and_email_graph
-4. Run the Demo
-Create a main.py file to demonstrate your new workflow.
+python cli.py add workflow translate_and_email_graph
+python cli.py add workflow scrape_and_summarize_graph
+```
 
-Python
+### 4. Run the Playground (Recommended)
+Launch the interactive web playground:
 
-# main.py
-from agents_library.workflows.summarize_and_email_graph import build_summarize_and_email_graph
+```bash
+python cli.py playground
+```
+Select a workflow, enter your inputs, and see live results in your browser!
 
-if __name__ == "__main__":
-    graph = build_summarize_and_email_graph()
+### 5. Run a Workflow from the CLI
+You can also run workflows directly:
 
-    print("🚀 Running Summarize + Email Workflow...\n")
-    inputs = {"input": "LangGraph makes it easier to build stateful AI workflows with reusable components."}
+```bash
+python cli.py run workflow summarize_and_email_graph --text "https://en.wikipedia.org/wiki/Artificial_intelligence" --recipient "test@example.com"
+python cli.py run workflow translate_and_email_graph --text "Hello, how are you?" --target_lang "fr" --recipient "test@example.com"
+python cli.py run workflow scrape_and_summarize_graph --text "https://en.wikipedia.org/wiki/Artificial_intelligence"
+```
 
-    for step in graph.stream(inputs):
-        print("Step Output:", step)
+## Workflows
+- **Summarize + Email**: Scrapes a URL, summarizes the content, and emails the result.
+- **Translate + Email**: Translates text to a target language and emails the result.
+- **Scrape + Summarize**: Scrapes a URL and summarizes the content.
 
-    print("\n✅ Workflow complete!")
-Run the demo to see it in action.
+## Playground Demo
+![Playground Screenshot](playground_screenshot.png)
 
-Bash
-
-python main.py
+## Contributing
+We welcome contributions! If you have an idea for a new node or a bug fix, please open an issue or submit a pull request on GitHub.
 
 Contributing
 We welcome contributions! If you have an idea for a new node or a bug fix, please open an issue or submit a pull request on GitHub.

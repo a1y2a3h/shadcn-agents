@@ -43,10 +43,21 @@ def add_component(kind: str, name: str):
     print(f"✅ Added {kind}: {name}")
 
 def list_all():
-    print("Templates (nodes):", templates_available("node"))
-    print("Templates (workflows):", templates_available("workflow"))
-    print("Library nodes:", library_items("node"))
-    print("Library workflows:", library_items("workflow"))
+    print("\n=== Available Templates ===")
+    print("Nodes:")
+    for node in templates_available("node"):
+        print(f"  - {node}")
+    print("Workflows:")
+    for wf in templates_available("workflow"):
+        print(f"  - {wf}")
+
+    print("\n=== Your Library ===")
+    print("Nodes:")
+    for node in library_items("node"):
+        print(f"  - {node}")
+    print("Workflows:")
+    for wf in library_items("workflow"):
+        print(f"  - {wf}")
 
 def run_workflow(name: str, text: str, target_lang: str = None, recipient: str = None):
     module_name = f"agents_library.workflows.{name}"
@@ -83,12 +94,16 @@ def main(argv: List[str] = None):
 
     parser_list = sub.add_parser("list")
 
+
     parser_run = sub.add_parser("run")
     parser_run.add_argument("kind", choices=["workflow"])
     parser_run.add_argument("name")
     parser_run.add_argument("--text", required=True)
     parser_run.add_argument("--target_lang", default=None)
     parser_run.add_argument("--recipient", default=None, help="recipient email (optional)")
+
+    # Add playground command
+    parser_playground = sub.add_parser("playground", help="Run the interactive playground app.")
 
     args = parser.parse_args(argv)
 
@@ -98,6 +113,9 @@ def main(argv: List[str] = None):
         list_all()
     elif args.cmd == "run":
         run_workflow(args.name, args.text, args.target_lang, args.recipient)
+    elif args.cmd == "playground":
+        # Launch the Streamlit playground app
+        os.system("streamlit run playground.py")
     else:
         parser.print_help()
 
