@@ -1,0 +1,29 @@
+[project]
+name = "shadcn-agent"
+version = "0.1.0"
+description = "Composable, CLI-driven AI agent workflows inspired by shadcn/ui."
+authors = [
+    { name = "Aryan Bagale", email = "aryanbagale22@gmail.com" }
+]
+readme = "README.MD"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+dependencies = [
+    "langgraph",
+    "streamlit",
+    "deep-translator",
+    "beautifulsoup4",
+    "requests",
+    "python-dotenv"
+]
+
+[project.urls]
+Homepage = "https://github.com/Aryan-Bagale/shadcn-agents"
+Repository = "https://github.com/Aryan-Bagale/shadcn-agents"
+
+[tool.setuptools.packages.find]
+where = ["agents_library"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

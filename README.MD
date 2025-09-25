@@ -41,13 +41,21 @@ python cli.py add workflow translate_and_email_graph
 python cli.py add workflow scrape_and_summarize_graph
 ```
 
+
 ### 4. Run the Playground (Recommended)
 Launch the interactive web playground:
 
 ```bash
 python cli.py playground
 ```
+
 Select a workflow, enter your inputs, and see live results in your browser!
+
+#### Advanced Playground Features
+- **Custom Workflow Builder:**
+	- Select any combination and order of nodes (search, summarize, translate, email) to build your own workflow.
+	- Enter inputs for the first node, and the playground will run each node in sequence, passing state between them.
+	- Download the results as JSON for any workflow.
 
 ### 5. Run a Workflow from the CLI
 You can also run workflows directly:
@@ -62,6 +70,7 @@ python cli.py run workflow scrape_and_summarize_graph --text "https://en.wikiped
 - **Summarize + Email**: Scrapes a URL, summarizes the content, and emails the result.
 - **Translate + Email**: Translates text to a target language and emails the result.
 - **Scrape + Summarize**: Scrapes a URL and summarizes the content.
+- **Custom Workflow Builder**: Build your own workflow from available nodes in the playground UI.
 
 ## Playground Demo
 ![Playground Screenshot](playground_screenshot.png)
