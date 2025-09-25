@@ -1,5 +1,5 @@
-
 # cli.py
+
 import argparse
 import importlib
 import os
@@ -7,18 +7,18 @@ import shutil
 import sys
 from pathlib import Path
 from typing import List
-from dotenv import load_dotenv
-load_dotenv()
 
 # Fix for ModuleNotFoundError when running from the root directory
+# This is needed for the CLI to find its templates
 sys.path.append('.')
 
 BASE = Path(__file__).parent
 TEMPLATE_DIR = BASE / "templates"
-DEFAULT_LIBRARY = "agents_library"
+DEFAULT_LIBRARY = "agents_library" # We still use this as a default, but it's no longer mandatory
 
 def get_library_dir(dest: str = None):
-    return BASE / (dest or DEFAULT_LIBRARY)
+    # This now gets a path relative to the current working directory
+    return Path(dest or DEFAULT_LIBRARY)
 
 def templates_available(kind: str) -> List[str]:
     p = TEMPLATE_DIR / (kind + "s")
@@ -52,25 +52,30 @@ def list_all(dest_folder: str = None):
     print("\n=== Available Templates ===")
     print("Nodes:")
     for node in templates_available("node"):
-        print(f"  - {node}")
+        print(f"  - {node}")
     print("Workflows:")
     for wf in templates_available("workflow"):
-        print(f"  - {wf}")
+        print(f"  - {wf}")
 
     print("\n=== Your Library ===")
     print("Nodes:")
     for node in library_items("node", dest_folder):
-        print(f"  - {node}")
+        print(f"  - {node}")
     print("Workflows:")
     for wf in library_items("workflow", dest_folder):
-        print(f"  - {wf}")
+        print(f"  - {wf}")
 
 def run_workflow(name: str, inputs: dict, dest_folder: str = None):
     lib_folder = dest_folder or DEFAULT_LIBRARY
     lib_dir = get_library_dir(dest_folder)
+    
     if not lib_dir.exists():
         print(f"❌ The library folder '{lib_folder}' does not exist. Please scaffold your nodes/workflows first using the CLI 'add' command.")
         return
+
+    # Dynamically add the user's project folder to the path
+    sys.path.insert(0, str(lib_dir.parent))
+    
     module_name = f"{lib_folder}.workflows.{name}"
     try:
         mod = importlib.import_module(module_name)
@@ -106,8 +111,11 @@ def main(argv: List[str] = None):
     parser_run.add_argument("kind", choices=["workflow"], help="Type of component to run (only workflow supported).")
     parser_run.add_argument("name", help="Name of workflow to run.")
     parser_run.add_argument("--dest", default=None, help="Library folder to use (default: agents_library)")
-    # Accept arbitrary key-value pairs for workflow inputs
-    parser_run.add_argument("--inputs", nargs=argparse.REMAINDER, help="Additional workflow inputs as --key value pairs.")
+    parser_run.add_argument("--url", default=None, help="URL input for the workflow.")
+    parser_run.add_argument("--text", default=None, help="Text input for the workflow.")
+    parser_run.add_argument("--target_lang", default=None, help="Target language (for translate workflows).")
+    parser_run.add_argument("--recipient", default=None, help="Recipient email (optional).")
+
 
     parser_playground = sub.add_parser("playground", help="Run the interactive playground app.")
 
@@ -118,18 +126,22 @@ def main(argv: List[str] = None):
     elif args.cmd == "list":
         list_all(args.dest)
     elif args.cmd == "run":
-        # Parse arbitrary --inputs as key-value pairs
-        input_dict = {}
-        if args.inputs:
-            key = None
-            for item in args.inputs:
-                if item.startswith('--'):
-                    key = item[2:]
-                    input_dict[key] = None
-                elif key:
-                    input_dict[key] = item
-                    key = None
-        run_workflow(args.name, input_dict, args.dest)
+        inputs = {
+            "url": args.url,
+            "text": args.text,
+            "target_lang": args.target_lang,
+            "recipient": args.recipient,
+        }
+        inputs = {k: v for k, v in inputs.items() if v is not None}
+        
+        if args.name == "summarize_and_email_graph" and "url" not in inputs:
+            print("❌ Error: 'summarize_and_email_graph' workflow requires a --url input.")
+            sys.exit(1)
+        if args.name == "translate_and_email_graph" and "text" not in inputs:
+            print("❌ Error: 'translate_and_email_graph' workflow requires a --text input.")
+            sys.exit(1)
+
+        run_workflow(args.name, inputs, args.dest)
     elif args.cmd == "playground":
         os.system("streamlit run playground.py")
     else:

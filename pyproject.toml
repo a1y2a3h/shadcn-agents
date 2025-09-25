@@ -1,29 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "shadcn-agent"
 version = "0.1.0"
-description = "Composable, CLI-driven AI agent workflows inspired by shadcn/ui."
 authors = [
-    { name = "Aryan Bagale", email = "aryanbagale22@gmail.com" }
+  { name = "Aryan Bagale", email = "aryanbagale22@gmail.com" }
 ]
-readme = "README.MD"
-license = { file = "LICENSE" }
+description = "A Shadcn-style CLI for building composable AI agents with LangGraph."
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "langgraph",
     "streamlit",
     "deep-translator",
     "beautifulsoup4",
     "requests",
-    "python-dotenv"
+    "python-dotenv",
+    "hatchling"
 ]
 
 [project.urls]
 Homepage = "https://github.com/Aryan-Bagale/shadcn-agents"
 Repository = "https://github.com/Aryan-Bagale/shadcn-agents"
 
-[tool.setuptools.packages.find]
-where = ["agents_library"]
+[project.scripts]
+"shadcn-agent" = "cli:main"
 
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+[tool.hatch.build.targets.sdist]
+packages = ["templates", "cli.py"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["templates", "cli.py"]
