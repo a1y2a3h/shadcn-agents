@@ -10,8 +10,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      PYTHONPATH: "${{ github.workspace }}:${{ github.workspace }}/components"
     strategy:
       matrix:
         python-version: [3.8, 3.9, "3.10", "3.11", "3.12"]
@@ -45,6 +43,8 @@ jobs:
         flake8 shadcn_agent --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Verify Python path and import components
+      env:
+        PYTHONPATH: .:./components
       run: |
         python - <<'PY'
         import sys
@@ -55,6 +55,8 @@ jobs:
         PY
 
     - name: Test with pytest
+      env:
+        PYTHONPATH: .:./components
       run: |
         pytest tests/ -v --cov=shadcn_agent --cov-report=xml
     
