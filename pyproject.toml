@@ -52,6 +52,7 @@ packages = ["shadcn_agent"]
 [tool.hatch.build.targets.sdist]
 include = [
     "/shadcn_agent",
-    "/README.md",
+    "/templates",
+    "/README.md", 
     "/LICENSE"
 ]

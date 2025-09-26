@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import List, Dict
 import tempfile
 import json
+import subprocess
 
 # GitHub repository configuration
 GITHUB_REPO = "Aryan-Bagale/shadcn-agents"
@@ -155,6 +156,40 @@ def init_project(dest_folder: str = None):
     print(f"📁 Created: {lib_folder}/nodes/ and {lib_folder}/workflows/")
     print(f"💡 Next: shadcn-agent add node <node_name> --dest {lib_folder}")
 
+
+def run_playground():
+    """Run the shadcn-agent playground using the packaged version"""
+    try:
+        # Get the path to the packaged playground.py
+        package_dir = Path(__file__).parent
+        playground_path = package_dir / "playground.py"
+        
+        if not playground_path.exists():
+            print("❌ Playground not found in package. Please reinstall shadcn-agent.")
+            sys.exit(1)
+        
+        print("🚀 Starting shadcn-agent playground...")
+        print(f"📁 Looking for components in current directory")
+        print("💡 Tip: Run this in a directory with your shadcn-agent components")
+        
+        # Run streamlit with the packaged playground
+        subprocess.run([
+            sys.executable, "-m", "streamlit", "run", 
+            str(playground_path),
+            "--server.headless", "false"
+        ])
+        
+    except KeyboardInterrupt:
+        print("\n👋 Playground stopped.")
+    except FileNotFoundError:
+        print("❌ Streamlit not found. Install it with: pip install streamlit")
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ Failed to start playground: {e}")
+        sys.exit(1)
+
+
+
 def create_config(dest_folder: str = None):
     """Create a .shadcn-agent.json config file"""
     config = {
@@ -236,9 +271,7 @@ def main(argv: List[str] = None):
 
         run_workflow(args.name, inputs, args.dest)
     elif args.cmd == "playground":
-        os.system("streamlit run playground.py")
-    else:
-        parser.print_help()
+    run_playground())
 
 if __name__ == "__main__":
     main()
