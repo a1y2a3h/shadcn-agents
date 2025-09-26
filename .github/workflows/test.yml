@@ -47,12 +47,12 @@ jobs:
     - name: Verify Python path and import components
       run: |
         python - <<'PY'
-import sys
-print('PYTHONPATH check:')
-print('\n'.join(sys.path))
-import importlib
-print('Import components success:', importlib.import_module('components'))
-PY
+        import sys
+        print('PYTHONPATH check:')
+        print('\n'.join(sys.path))
+        import importlib
+        print('Import components success:', importlib.import_module('components'))
+        PY
 
     - name: Test with pytest
       run: |
