@@ -6,15 +6,29 @@ import os
 import sys
 import requests
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 import tempfile
 import json
 import subprocess
+import time
+import importlib.util
 
 # GitHub repository configuration
 GITHUB_REPO = "Aryan-Bagale/shadcn-agents"
 GITHUB_BRANCH = "main"
 TEMPLATES_BASE_URL = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/templates"
+
+class ShadcnAgentError(Exception):
+    """Base exception for shadcn-agent errors"""
+    pass
+
+class TemplateNotFoundError(ShadcnAgentError):
+    """Raised when a template cannot be found"""
+    pass
+
+class ImportError(ShadcnAgentError):
+    """Raised when imports fail"""
+    pass
 
 def fetch_template_content(kind: str, name: str) -> str:
     """Fetch template content directly from GitHub and fix imports"""
@@ -30,17 +44,37 @@ def fetch_template_content(kind: str, name: str) -> str:
         
         return content
     except requests.Timeout:
-        raise Exception(f"Timeout fetching template from {url}")
+        raise TemplateNotFoundError(f"Timeout fetching template from {url}")
     except requests.RequestException as e:
-        raise Exception(f"Failed to fetch template from {url}: {e}")
+        raise TemplateNotFoundError(f"Failed to fetch template from {url}: {e}")
 
 def fix_template_imports(content: str) -> str:
     """Fix relative imports in templates to work after being copied"""
     # Replace relative imports with absolute imports
     content = content.replace("from ..nodes.", "from components.nodes.")
-    # Also handle any other relative import patterns
     content = content.replace("from ..workflows.", "from components.workflows.")
-    return content
+    
+    # Also handle try/except import blocks more robustly
+    lines = content.split('\n')
+    fixed_lines = []
+    
+    for line in lines:
+        # Skip the fallback import attempts that might not work
+        if 'except ImportError:' in line or 'from ..nodes.' in line or 'from ..workflows.' in line:
+            # Keep the except block but improve error message
+            if 'except ImportError as e:' in line:
+                fixed_lines.append(line)
+            elif 'raise ImportError(' in line:
+                fixed_lines.append(line)
+            # Skip the problematic relative import fallbacks
+            elif 'from ..' in line and 'import' in line:
+                continue
+            else:
+                fixed_lines.append(line)
+        else:
+            fixed_lines.append(line)
+    
+    return '\n'.join(fixed_lines)
 
 def fetch_available_templates() -> Dict[str, List[str]]:
     """Fetch list of available templates from GitHub API"""
@@ -69,36 +103,35 @@ def fetch_available_templates() -> Dict[str, List[str]]:
             "workflows": ["summarize_and_email_graph", "translate_and_email_graph", "scrape_and_summarize_graph"]
         }
 
-def get_library_dir(dest: str = None):
+def get_library_dir(dest: Optional[str] = None) -> Path:
     """Get the library directory path"""
     return Path(dest or "components")
 
-def library_items(kind: str, dest: str = None) -> List[str]:
+def library_items(kind: str, dest: Optional[str] = None) -> List[str]:
     """List existing library items"""
     p = get_library_dir(dest) / (kind + "s")
     if not p.exists():
         return []
     return [f.stem for f in p.glob("*.py") if not f.name.startswith('__')]
 
-def validate_workflow_inputs(workflow_name: str, inputs: dict) -> List[str]:
+def validate_workflow_inputs(workflow_name: str, inputs: Dict) -> List[str]:
     """Validate inputs for specific workflows"""
     errors = []
     
-    if workflow_name == "summarize_and_email_graph":
-        if not inputs.get("url"):
-            errors.append("'summarize_and_email_graph' requires --url parameter")
-    elif workflow_name == "translate_and_email_graph":
-        if not inputs.get("text"):
-            errors.append("'translate_and_email_graph' requires --text parameter")
-        if not inputs.get("target_lang"):
-            errors.append("'translate_and_email_graph' requires --target_lang parameter")
-    elif workflow_name == "scrape_and_summarize_graph":
-        if not inputs.get("url"):
-            errors.append("'scrape_and_summarize_graph' requires --url parameter")
+    required_inputs = {
+        "summarize_and_email_graph": [("url", "URL")],
+        "translate_and_email_graph": [("text", "text"), ("target_lang", "target language")],
+        "scrape_and_summarize_graph": [("url", "URL")]
+    }
+    
+    if workflow_name in required_inputs:
+        for param, description in required_inputs[workflow_name]:
+            if not inputs.get(param):
+                errors.append(f"'{workflow_name}' requires --{param} parameter ({description})")
     
     return errors
 
-def add_component(kind: str, name: str, dest_folder: str = None):
+def add_component(kind: str, name: str, dest_folder: Optional[str] = None) -> bool:
     """Add a component by fetching it from GitHub"""
     dest_dir = get_library_dir(dest_folder) / (kind + "s")
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -119,16 +152,20 @@ def add_component(kind: str, name: str, dest_folder: str = None):
         print(f"📡 Fetching {kind} template: {name}...")
         content = fetch_template_content(kind, name)
         
+        # Ensure proper encoding when writing
         with open(dest, 'w', encoding='utf-8') as f:
             f.write(content)
         
         print(f"✅ Added {kind}: {name} to {dest_dir}")
         return True
+    except TemplateNotFoundError as e:
+        print(f"❌ Template not found: {e}")
+        return False
     except Exception as e:
         print(f"❌ Failed to add {kind} '{name}': {e}")
         return False
 
-def list_all(dest_folder: str = None):
+def list_all(dest_folder: Optional[str] = None):
     """List available templates and local components"""
     lib_name = dest_folder or "components"
     
@@ -170,7 +207,48 @@ def list_all(dest_folder: str = None):
     else:
         print("  (none)")
 
-def run_workflow(name: str, inputs: dict, dest_folder: str = None):
+def safe_import_workflow(name: str, lib_folder: str) -> Optional[callable]:
+    """Safely import a workflow module with better error handling"""
+    lib_dir = get_library_dir(lib_folder)
+    workflow_file = lib_dir / "workflows" / f"{name}.py"
+    
+    if not workflow_file.exists():
+        return None
+    
+    # Add the project root to Python path
+    project_root = lib_dir.parent.absolute()
+    original_path = sys.path.copy()
+    
+    try:
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
+        
+        # Use importlib.util for more robust importing
+        module_name = f"{lib_folder}.workflows.{name}"
+        spec = importlib.util.spec_from_file_location(module_name, workflow_file)
+        
+        if spec is None or spec.loader is None:
+            return None
+        
+        module = importlib.util.module_from_spec(spec)
+        
+        # Clear from sys.modules to ensure fresh import
+        if module_name in sys.modules:
+            del sys.modules[module_name]
+        
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        
+        return getattr(module, "build_workflow", None)
+        
+    except Exception as e:
+        print(f"❌ Import error for workflow '{name}': {e}")
+        return None
+    finally:
+        # Restore original path
+        sys.path[:] = original_path
+
+def run_workflow(name: str, inputs: Dict, dest_folder: Optional[str] = None) -> bool:
     """Run a workflow from the user's project"""
     lib_folder = dest_folder or "components"
     lib_dir = get_library_dir(dest_folder)
@@ -196,22 +274,11 @@ def run_workflow(name: str, inputs: dict, dest_folder: str = None):
             print(f"   {error}")
         return False
 
-    # Add the parent directory to Python path for imports
-    project_root = lib_dir.parent.absolute()
-    if str(project_root) not in sys.path:
-        sys.path.insert(0, str(project_root))
-    
-    module_name = f"{lib_folder}.workflows.{name}"
     try:
-        # Clear module cache to ensure fresh import
-        if module_name in sys.modules:
-            del sys.modules[module_name]
-        
-        mod = importlib.import_module(module_name)
-        builder = getattr(mod, "build_workflow", None)
+        builder = safe_import_workflow(name, lib_folder)
         
         if builder is None:
-            print(f"❌ Workflow module {module_name} does not expose build_workflow() function")
+            print(f"❌ Could not import workflow '{name}' or it doesn't expose build_workflow() function")
             return False
 
         print(f"🚀 Running workflow: {name} from {lib_folder}")
@@ -234,12 +301,8 @@ def run_workflow(name: str, inputs: dict, dest_folder: str = None):
     except Exception as e:
         print(f"❌ Error running workflow '{name}': {e}")
         return False
-    finally:
-        # Clean up sys.path
-        if str(project_root) in sys.path:
-            sys.path.remove(str(project_root))
 
-def init_project(dest_folder: str = None):
+def init_project(dest_folder: Optional[str] = None) -> bool:
     """Initialize a new shadcn-agent project with basic structure"""
     lib_folder = dest_folder or "components"
     lib_dir = get_library_dir(dest_folder)
@@ -250,9 +313,9 @@ def init_project(dest_folder: str = None):
         (lib_dir / "workflows").mkdir(parents=True, exist_ok=True)
         
         # Create __init__.py files to make it a proper Python package
-        (lib_dir / "__init__.py").write_text("# shadcn-agent components\n")
-        (lib_dir / "nodes" / "__init__.py").write_text("# Agent nodes\n")
-        (lib_dir / "workflows" / "__init__.py").write_text("# Agent workflows\n")
+        (lib_dir / "__init__.py").write_text("# shadcn-agent components\n", encoding='utf-8')
+        (lib_dir / "nodes" / "__init__.py").write_text("# Agent nodes\n", encoding='utf-8')
+        (lib_dir / "workflows" / "__init__.py").write_text("# Agent workflows\n", encoding='utf-8')
         
         print(f"✅ Initialized shadcn-agent project structure in {lib_folder}/")
         print(f"📁 Created directories:")
@@ -266,7 +329,7 @@ def init_project(dest_folder: str = None):
         print(f"❌ Failed to initialize project: {e}")
         return False
 
-def run_playground():
+def run_playground() -> bool:
     """Run the shadcn-agent playground using the packaged version"""
     try:
         # Get the path to the packaged playground.py
@@ -304,7 +367,7 @@ def run_playground():
         print(f"❌ Failed to start playground: {e}")
         return False
 
-def create_config(dest_folder: str = None):
+def create_config(dest_folder: Optional[str] = None) -> bool:
     """Create a .shadcn-agent.json config file"""
     config = {
         "components_dir": dest_folder or "components",
@@ -314,7 +377,7 @@ def create_config(dest_folder: str = None):
     }
     
     try:
-        with open('.shadcn-agent.json', 'w') as f:
+        with open('.shadcn-agent.json', 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=2)
         
         print("✅ Created .shadcn-agent.json config file")
@@ -323,18 +386,18 @@ def create_config(dest_folder: str = None):
         print(f"❌ Failed to create config file: {e}")
         return False
 
-def load_config():
+def load_config() -> Dict:
     """Load configuration from .shadcn-agent.json if it exists"""
     config_file = Path(".shadcn-agent.json")
     if config_file.exists():
         try:
-            with open(config_file) as f:
+            with open(config_file, encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
             print(f"⚠️ Could not load config file: {e}")
     return {}
 
-def main(argv: List[str] = None):
+def main(argv: Optional[List[str]] = None) -> int:
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
         description="shadcn-agent: Build composable AI agents with copy-paste components from GitHub.",

@@ -1,0 +1,10 @@
+# ===== MANIFEST.in (Package distribution) =====
+include README.MD
+include LICENSE
+include requirements.txt
+include .env.example
+recursive-include shadcn_agent *.py
+recursive-include templates *.py
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+global-exclude .DS_Store
