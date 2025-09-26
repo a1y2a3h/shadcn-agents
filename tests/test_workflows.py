@@ -8,7 +8,7 @@ class TestWorkflows:
     """Test workflow functionality"""
     
     @patch('components.nodes.search_node.search_node')
-    @patch('components.nodes.summarizer_node.summarizer_node') 
+    @patch('components.nodes.summarizer_node.summarizer_node')
     @patch('components.nodes.email_node.email_node')
     def test_summarize_and_email_workflow(self, mock_email, mock_summarizer, mock_search):
         """Test complete summarize and email workflow"""
