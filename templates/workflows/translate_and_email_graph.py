@@ -1,11 +1,10 @@
-# templates/workflows/translate_and_email_graph.py
+# ===== templates/workflows/translate_and_email_graph.py =====
 from langgraph.graph import StateGraph, END
-from .nodes.translate_node import translate_node # <-- Changed to relative import
-from .nodes.email_node import email_node # <-- Changed to relative import
+from ..nodes.translate_node import translate_node
+from ..nodes.email_node import email_node
 
 def build_workflow():
     workflow = StateGraph(dict)
-
     workflow.add_node("translate", translate_node)
     workflow.add_node("email", email_node)
 

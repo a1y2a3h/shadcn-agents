@@ -1,7 +1,7 @@
-# templates/workflows/scrape_and_summarize_graph.py
+# ===== templates/workflows/scrape_and_summarize_graph.py =====
 from langgraph.graph import StateGraph, END
-from agents_library.nodes.search_node import search_node
-from agents_library.nodes.summarizer_node import summarizer_node
+from ..nodes.search_node import search_node
+from ..nodes.summarizer_node import summarizer_node
 
 def build_workflow():
     workflow = StateGraph(dict)
