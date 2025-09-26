@@ -76,9 +76,10 @@ ehthumbs.db
 Thumbs.db
 
 # Project specific
-components/
-agents_library/
-my_agents/
+# Keep a minimal components package for tests
+# (allow user projects to ignore their own folders separately)
+# agents_library/
+# my_agents/
 *.log
 
 # Streamlit
