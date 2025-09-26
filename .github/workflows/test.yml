@@ -43,7 +43,10 @@ jobs:
         flake8 shadcn_agent --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Test with pytest
+      env:
+        PYTHONPATH: "${{ github.workspace }}:${{ github.workspace }}/components:${{ env.PYTHONPATH }}"
       run: |
+        echo "PYTHONPATH=$PYTHONPATH"
         pytest tests/ -v --cov=shadcn_agent --cov-report=xml
     
     - name: Upload coverage to Codecov
