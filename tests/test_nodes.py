@@ -1,4 +1,5 @@
 # ===== tests/test_nodes.py =====
+import os
 import pytest
 from unittest.mock import patch, MagicMock
 import sys

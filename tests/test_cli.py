@@ -61,6 +61,7 @@ class TestInitProject:
     def test_init_project(self):
         """Test project initialization in temporary directory"""
         with tempfile.TemporaryDirectory() as temp_dir:
+            old_cwd = os.getcwd()
             os.chdir(temp_dir)
             
             # Test init command
@@ -72,3 +73,6 @@ class TestInitProject:
             assert Path("test_components/nodes").exists()
             assert Path("test_components/workflows").exists()
             assert Path("test_components/__init__.py").exists()
+
+            # Restore working directory so Windows can clean up the temp dir
+            os.chdir(old_cwd)

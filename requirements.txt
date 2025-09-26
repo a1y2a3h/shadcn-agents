@@ -17,7 +17,8 @@ python-dotenv>=0.19.0,<2.0.0
 # pre-commit>=2.0,<4.0
 
 # Additional useful packages that might be needed
-lxml>=4.6.0,<5.0.0  # Better XML/HTML parsing for BeautifulSoup
+# Pin to a version that provides prebuilt wheels for Python 3.13 on Windows
+lxml>=5.2.2,<6.0.0  # Better XML/HTML parsing for BeautifulSoup
 urllib3>=1.26.0,<2.0.0  # HTTP library (usually comes with requests)
 certifi>=2021.0.0  # SSL certificates (usually comes with requests)
 
