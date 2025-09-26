@@ -43,22 +43,27 @@ jobs:
         flake8 shadcn_agent --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Verify Python path and import components
-      env:
-        PYTHONPATH: .:./components
       run: |
         python - <<'PY'
-        import sys
-        print('PYTHONPATH check:')
+        import sys, os
+        # Prepend workspace and components explicitly
+        sys.path.insert(0, os.getcwd())
+        sys.path.insert(0, os.path.join(os.getcwd(), 'components'))
+        print('sys.path:')
         print('\n'.join(sys.path))
         import importlib
         print('Import components success:', importlib.import_module('components'))
         PY
 
     - name: Test with pytest
-      env:
-        PYTHONPATH: .:./components
       run: |
-        pytest tests/ -v --cov=shadcn_agent --cov-report=xml
+        PYTHONPATH=.:
+        python - <<'PY'
+        import sys, os
+        sys.path.insert(0, os.getcwd())
+        sys.path.insert(0, os.path.join(os.getcwd(), 'components'))
+        import pytest; raise SystemExit(pytest.main(['tests/', '-v', '--cov=shadcn_agent', '--cov-report=xml']))
+        PY
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
