@@ -271,7 +271,7 @@ def main(argv: List[str] = None):
 
         run_workflow(args.name, inputs, args.dest)
     elif args.cmd == "playground":
-    run_playground())
+    run_playground()
 
 if __name__ == "__main__":
     main()
